@@ -10,6 +10,7 @@ terraform-key.json
 
 # Terraform
 .terraform/
+.terraform.lock.*
 .terraform.tfstate*
 terraform/.terraform/
 terraform/terraform.tfstate
