@@ -1,0 +1,42 @@
+name: Hourly ETL
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run-etl:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: buoyant-episode-386713
+      BIGQUERY_DATASET: all_billing_data
+      GCP_BILLING_TABLE_PATTERN: gcp_billing_export_resource_v1_*
+      GCP_POSTGRES_CONN: ${{ secrets.GCP_POSTGRES_CONN }}
+      AZURE_POSTGRES_CONN: ${{ secrets.AZURE_POSTGRES_CONN }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Run ETL
+        env:
+          GOOGLE_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+        run: python ETL.py

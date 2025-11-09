@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.python-version
+venv/
+
+# Environment / secrets
+.env
+terraform-key.json
+
+# Terraform
+.terraform/
+.terraform.tfstate*
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.*
+terraform/terraform.tfvars
+*.tfvars
+*.tfvars.json
+tmp.sql
+
+# macOS
+.DS_Store
