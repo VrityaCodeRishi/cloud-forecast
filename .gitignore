@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .python-version
 venv/
+venv311/*
 
 # Environment / secrets
 .env
@@ -10,6 +11,7 @@ terraform-key.json
 
 # Terraform
 .terraform/
+.terraform.lock.hcl
 .terraform.lock.*
 .terraform.tfstate*
 terraform/.terraform/
