@@ -52,7 +52,6 @@ jobs:
     needs: run-etl
     runs-on: gpu-training-runner
     env:
-      MODEL_ARTIFACT_PATH: ${{ env.MODEL_ARTIFACT_PATH }}
       POSTGRES_CONN_STR: ${{ secrets.POSTGRES_CONN_STR }}
     steps:
       - uses: actions/checkout@v4
