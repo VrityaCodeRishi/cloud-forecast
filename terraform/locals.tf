@@ -12,6 +12,7 @@ locals {
 
   gcp_database_name = "${var.project_name}-postgres"
   gcp_models_bucket = "${var.gcp_project_id}-${var.gcp_models_bucket_name}-${var.environment}"
+  gcp_artifact_repository = "${var.gcp_artifact_repository_id}-${var.environment}"
 
   # Azure computed values
   azure_tags = merge(

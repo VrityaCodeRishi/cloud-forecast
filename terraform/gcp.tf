@@ -134,6 +134,15 @@ resource "google_storage_bucket" "models" {
   labels = local.gcp_labels
 }
 
+resource "google_artifact_registry_repository" "docker" {
+  count         = local.create_gcp ? 1 : 0
+  location      = var.gcp_artifact_location
+  repository_id = local.gcp_artifact_repository
+  format        = "DOCKER"
+  description   = "Container images for ${var.project_name}"
+  labels        = local.gcp_labels
+}
+
 # Service account for GitHub Actions ETL pipeline
 resource "google_service_account" "etl" {
   count        = local.create_gcp ? 1 : 0
@@ -166,4 +175,13 @@ resource "google_bigquery_dataset_iam_member" "etl_dataset_viewer" {
 resource "google_service_account_key" "etl" {
   count              = local.create_gcp ? 1 : 0
   service_account_id = google_service_account.etl[0].name
+}
+
+resource "google_artifact_registry_repository_iam_member" "etl_writer" {
+  count      = local.create_gcp ? 1 : 0
+  project    = var.gcp_project_id
+  location   = var.gcp_artifact_location
+  repository = google_artifact_registry_repository.docker[0].repository_id
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.etl[0].email}"
 }

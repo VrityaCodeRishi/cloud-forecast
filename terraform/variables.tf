@@ -87,6 +87,18 @@ variable "gcp_models_bucket_name" {
   default     = "cloud-cost-models"
 }
 
+variable "gcp_artifact_repository_id" {
+  description = "Artifact Registry repository ID (will be suffixed with environment)"
+  type        = string
+  default     = "cost-forecast-api"
+}
+
+variable "gcp_artifact_location" {
+  description = "Region for the Artifact Registry (defaults to gcp_region)"
+  type        = string
+  default     = "us-central1"
+}
+
 variable "gcp_billing_dataset_id" {
   description = "Existing BigQuery dataset ID that stores billing export tables"
   type        = string
