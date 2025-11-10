@@ -19,7 +19,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       BIGQUERY_DATASET: all_billing_data
       GCP_BILLING_TABLE_PATTERN: gcp_billing_export_resource_v1_*
       GCP_POSTGRES_CONN: ${{ secrets.GCP_POSTGRES_CONN }}
@@ -45,7 +45,7 @@ jobs:
 
       - name: Run ETL
         env:
-          GOOGLE_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+          GOOGLE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: python ETL.py
 
   train-gcp:
@@ -131,14 +131,14 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.GCP_PROJECT_ID }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
 
       - name: Build FastAPI image
         run: |
-          IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           docker build -t "$IMAGE_URI" -f Dockerfile .
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
@@ -162,7 +162,7 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.GCP_PROJECT_ID }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
