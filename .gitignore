@@ -5,6 +5,10 @@ __pycache__/
 venv/
 venv311/*
 
+lightning_logs/
+*.ckpt
+artifacts/
+
 # Environment / secrets
 .env
 terraform-key.json
