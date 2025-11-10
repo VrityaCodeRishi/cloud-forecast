@@ -16,6 +16,7 @@ from pytorch_forecasting.data.encoders import NaNLabelEncoder
 
 POSTGRES_CONN_STR = os.getenv("POSTGRES_CONN_STR", "")
 PROVIDER_NAME = os.getenv("PROVIDER_NAME", "gcp").lower()
+MIN_SERIES_POINTS = int(os.getenv("MIN_SERIES_POINTS", "3"))
 BATCH_SIZE = 64
 MAX_EPOCHS = 100
 MAX_ENCODER_LENGTH = 30
@@ -86,12 +87,25 @@ def create_datasets(df):
         .size()
         .reset_index(name='num_points')
     )
-    keep = counts[counts['num_points'] >= min_series_length][['provider', 'service']]
+    max_points = counts['num_points'].max()
+    if pd.isna(max_points) or max_points <= 0:
+        raise ValueError(f"[{PROVIDER_NAME.upper()}] No historical points available to train.")
+
+    max_points = int(max_points)
+    effective_min_series_length = min(min_series_length, max_points)
+    if max_points >= MIN_SERIES_POINTS:
+        effective_min_series_length = max(MIN_SERIES_POINTS, effective_min_series_length)
+    else:
+        effective_min_series_length = max_points
+
+    effective_min_series_length = max(1, effective_min_series_length)
+    keep = counts[counts['num_points'] >= effective_min_series_length][['provider', 'service']]
     df_filtered = df.merge(keep, on=['provider', 'service'], how='inner')
 
     if df_filtered.empty:
         raise ValueError(
-            f"Not enough history per service to train TFT. Need at least {min_series_length} points per service."
+            f"[{PROVIDER_NAME.upper()}] Not enough history per service to train TFT. "
+            f"Need at least {effective_min_series_length} points per service."
         )
 
     training = TimeSeriesDataSet(
