@@ -9,8 +9,6 @@ env:
   PYTHON_VERSION: "3.11"
   IMAGE_NAME: cost-forecast-api
   DO_REGISTRY: ${{ secrets.DO_REGISTRY }}
-  MODEL_ARTIFACT_DIR: artifacts/model
-  MODEL_ARTIFACT_PATH: artifacts/model/tft_cost_forecast.ckpt
 
 jobs:
   run-etl:
@@ -48,11 +46,14 @@ jobs:
           GOOGLE_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
         run: python ETL.py
 
-  train-model:
+  train-gcp:
     needs: run-etl
     runs-on: gpu-training-runner
     env:
-      POSTGRES_CONN_STR: ${{ secrets.POSTGRES_CONN_STR }}
+      PROVIDER_NAME: gcp
+      MODEL_ARTIFACT_DIR: artifacts/model/gcp
+      MODEL_ARTIFACT_PATH: artifacts/model/gcp/tft_cost_forecast.ckpt
+      POSTGRES_CONN_STR: ${{ secrets.GCP_POSTGRES_CONN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,13 +70,44 @@ jobs:
       - name: Upload model artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tft-model
-          path: ${{ env.MODEL_ARTIFACT_DIR }}
+          name: tft-model-gcp
+          path: artifacts/model/gcp
+          if-no-files-found: error
+          retention-days: 5
+
+  train-azure:
+    needs: run-etl
+    runs-on: gpu-training-runner
+    env:
+      PROVIDER_NAME: azure
+      MODEL_ARTIFACT_DIR: artifacts/model/azure
+      MODEL_ARTIFACT_PATH: artifacts/model/azure/tft_cost_forecast.ckpt
+      POSTGRES_CONN_STR: ${{ secrets.AZURE_POSTGRES_CONN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install training dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Train Temporal Fusion Transformer
+        run: python -m src.training.tft
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tft-model-azure
+          path: artifacts/model/azure
           if-no-files-found: error
           retention-days: 5
 
   build-and-push-image:
-    needs: train-model
+    needs:
+      - train-gcp
+      - train-azure
     runs-on: etl-runner
     env:
       IMAGE_TAG: ${{ github.sha }}
@@ -84,11 +116,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download trained model artifact
+      - name: Download trained model artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tft-model
-          path: ${{ env.MODEL_ARTIFACT_DIR }}
+          pattern: tft-model-*
+          merge-multiple: true
 
       - name: Log in to DigitalOcean Container Registry
         uses: docker/login-action@v3
@@ -120,13 +152,13 @@ jobs:
       - name: Download model artifact backup
         uses: actions/download-artifact@v4
         with:
-          name: tft-model
-          path: artifacts/model
+          pattern: tft-model-*
+          merge-multiple: true
 
-      - name: Persist model artifact on runner
+      - name: Persist model artifacts on runner
         run: |
           mkdir -p $HOME/cost-forecast/model
-          cp artifacts/model/tft_cost_forecast.ckpt $HOME/cost-forecast/model/tft_cost_forecast.ckpt
+          cp -R artifacts/model/. $HOME/cost-forecast/model/
 
       - name: Log in to DigitalOcean Container Registry
         uses: docker/login-action@v3

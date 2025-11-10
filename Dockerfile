@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY src ./src
 COPY artifacts/model /app/model
 
-ENV MODEL_CHECKPOINT=/app/model/tft_cost_forecast.ckpt
+ENV MODEL_DIR=/app/model
 
 EXPOSE 8000
 CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000"]

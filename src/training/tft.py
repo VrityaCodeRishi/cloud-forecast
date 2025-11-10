@@ -6,19 +6,31 @@ import psycopg2
 import torch
 from lightning.pytorch import Trainer
 from lightning.pytorch.callbacks import EarlyStopping
-from pytorch_forecasting import TimeSeriesDataSet, TemporalFusionTransformer, GroupNormalizer, QuantileLoss
+from pytorch_forecasting import (
+    GroupNormalizer,
+    QuantileLoss,
+    TemporalFusionTransformer,
+    TimeSeriesDataSet,
+)
 from pytorch_forecasting.data.encoders import NaNLabelEncoder
 
-POSTGRES_CONN_STR = os.getenv(
-    "POSTGRES_CONN_STR",
-    "",
-)
+POSTGRES_CONN_STR = os.getenv("POSTGRES_CONN_STR", "")
+PROVIDER_NAME = os.getenv("PROVIDER_NAME", "gcp").lower()
 BATCH_SIZE = 64
 MAX_EPOCHS = 100
 MAX_ENCODER_LENGTH = 30
 MAX_PREDICTION_LENGTH = 7
-MODEL_ARTIFACT_PATH = Path(os.getenv("MODEL_ARTIFACT_PATH", "artifacts/model/tft_cost_forecast.ckpt"))
+MODEL_FILENAME = os.getenv("MODEL_FILENAME", "tft_cost_forecast.ckpt")
+MODEL_ARTIFACT_PATH = Path(
+    os.getenv(
+        "MODEL_ARTIFACT_PATH",
+        os.path.join("artifacts", "model", PROVIDER_NAME, MODEL_FILENAME),
+    )
+)
 MODEL_ARTIFACT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+if not POSTGRES_CONN_STR:
+    raise ValueError("POSTGRES_CONN_STR environment variable is required for training.")
 
 def load_data():
     query = """
@@ -141,7 +153,9 @@ def train_model(training, validation):
 
     trainer.fit(tft, train_dataloader, val_dataloader)
     trainer.save_checkpoint(str(MODEL_ARTIFACT_PATH))
-    print(f"Training complete. Model checkpoint saved to {MODEL_ARTIFACT_PATH}.")
+    print(
+        f"[{PROVIDER_NAME.upper()}] Training complete. Model checkpoint saved to {MODEL_ARTIFACT_PATH}."
+    )
 
     return tft, trainer
 
