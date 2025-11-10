@@ -14,7 +14,7 @@ MODEL_ROOT = Path(os.getenv("MODEL_DIR", "artifacts/model"))
 MODEL_CHECKPOINTS_ENV = os.getenv("MODEL_CHECKPOINTS")
 SINGLE_CHECKPOINT_ENV = os.getenv("MODEL_CHECKPOINT")
 DEFAULT_MODEL_FILENAME = "tft_cost_forecast.ckpt"
-MODEL_DISCOVERY_REQUIRED = os.getenv("MODEL_REQUIRED", "1").lower() not in {"0", "false"}
+MODEL_DISCOVERY_REQUIRED = os.getenv("MODEL_REQUIRED", "0").lower() not in {"0", "false"}
 
 
 def _discover_model_paths() -> Dict[str, Path]:
