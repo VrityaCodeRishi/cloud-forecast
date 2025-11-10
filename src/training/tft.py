@@ -126,17 +126,25 @@ def create_datasets(df):
     if encoder_length + prediction_length > shortest_series:
         prediction_length = max(1, shortest_series - encoder_length)
 
-    training_cutoff = df_filtered['time_idx'].max() - prediction_length
+    max_time = df_filtered['time_idx'].max()
+    min_time = df_filtered['time_idx'].min()
+    training_cutoff = max_time - prediction_length
+    if training_cutoff <= min_time:
+        training_cutoff = max_time
+
+    training_df = df_filtered[df_filtered.time_idx <= training_cutoff].copy()
+    if training_df.empty:
+        training_df = df_filtered.copy()
 
     training = TimeSeriesDataSet(
-        df_filtered[df_filtered.time_idx <= training_cutoff],
+        training_df,
         time_idx='time_idx',
         target='cost',
         group_ids=['provider', 'service'],
         max_encoder_length=encoder_length,
         max_prediction_length=prediction_length,
         min_encoder_length=1,
-        min_prediction_length=prediction_length,
+        min_prediction_length=1,
         time_varying_known_categoricals=['provider', 'service', 'region', 'currency'],
         time_varying_unknown_reals=['cost'],
         target_normalizer=GroupNormalizer(groups=["provider", "service"]),
