@@ -4,11 +4,23 @@ from typing import Dict
 
 import pandas as pd
 import torch
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
 
+BASE_DIR = Path(__file__).resolve().parent
+TEMPLATE_DIR = BASE_DIR / "templates"
+STATIC_DIR = BASE_DIR / "static"
+
 app = FastAPI()
+
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 MODEL_ROOT = Path(os.getenv("MODEL_DIR", "artifacts/model"))
 MODEL_CHECKPOINTS_ENV = os.getenv("MODEL_CHECKPOINTS")
@@ -126,6 +138,23 @@ async def forecast(request: ForecastRequest):
         pred_list.append((q, preds[0, :, i].tolist()))
 
     return {"forecast": dict(pred_list)}
+
+
+@app.get("/providers")
+async def list_providers():
+    return {"providers": sorted(MODEL_REGISTRY.keys())}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    provider_list = sorted(MODEL_REGISTRY.keys())
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "providers": provider_list,
+        },
+    )
 
 
 if __name__ == "__main__":

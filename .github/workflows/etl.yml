@@ -190,5 +190,18 @@ jobs:
           docker run -d --name cost-forecast-api \
             --restart unless-stopped \
             -v $HOME/cost-forecast/model:/app/model \
-            -p 8000:8000 \
+            -p 80:8000 \
             $IMAGE_URI
+
+      - name: Health check
+        run: |
+          for attempt in {1..6}; do
+            if curl -fsS http://127.0.0.1/health > /dev/null; then
+              echo "API is healthy"
+              exit 0
+            fi
+            echo "Health check failed on attempt $attempt, retrying..."
+            sleep 10
+          done
+          echo "API health check failed after retries" >&2
+          exit 1

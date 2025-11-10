@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Cost Forecast</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Cloud Cost Forecast</h1>
+    <p>Compare near-term, monthly, and yearly projections for your GCP and Azure workloads.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Request Forecast</h2>
+      <form id="forecast-form">
+        <label>
+          Provider
+          <select name="provider" id="provider">
+            {% for provider in providers %}
+            <option value="{{ provider }}">{{ provider|upper }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>
+          Service
+          <input type="text" name="service" id="service" placeholder="e.g., Cloud SQL" required />
+        </label>
+
+        <label>
+          Region
+          <input type="text" name="region" id="region" placeholder="e.g., us-central1" required />
+        </label>
+
+        <label>
+          Currency
+          <input type="text" name="currency" id="currency" value="USD" required />
+        </label>
+
+        <label>
+          Time Index Start
+          <input type="number" name="time_idx_start" id="time_idx_start" placeholder="1500" required />
+        </label>
+
+        <label>
+          Recent Costs (comma separated, most recent last)
+          <textarea id="recent_costs" name="recent_costs" rows="4" placeholder="25.4, 26.1, 24.9, ..." required></textarea>
+        </label>
+
+        <button type="submit">Run Forecast</button>
+      </form>
+    </section>
+
+    <section class="panel" id="results-panel">
+      <h2>Forecast Results</h2>
+      <div id="results">
+        <p class="muted">Submit a forecast request to see predictions.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Powered by Temporal Fusion Transformer models trained on your latest cloud spend.</p>
+  </footer>
+
+  <script src="/static/js/app.js" defer></script>
+</body>
+</html>
