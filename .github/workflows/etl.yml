@@ -178,5 +178,6 @@ jobs:
           docker rm cost-forecast-api || true
           docker run -d --name cost-forecast-api \
             --restart unless-stopped \
+            -v $HOME/cost-forecast/model:/app/model \
             -p 8000:8000 \
             $IMAGE_URI
