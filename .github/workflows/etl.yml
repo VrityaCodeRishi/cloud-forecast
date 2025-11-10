@@ -8,6 +8,7 @@ on:
 env:
   PYTHON_VERSION: "3.11"
   IMAGE_NAME: cost-forecast-api
+  IMAGE_TAG: ${{ github.sha }}
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   AR_REPOSITORY: ${{ secrets.GCP_AR_REPOSITORY }}
   AR_LOCATION: ${{ secrets.GCP_AR_LOCATION }}
@@ -111,10 +112,6 @@ jobs:
       - train-gcp
       - train-azure
     runs-on: etl-runner
-    env:
-      IMAGE_TAG: ${{ github.sha }}
-    outputs:
-      image_ref: ${{ steps.image_uri.outputs.image_uri }}
     steps:
       - uses: actions/checkout@v4
 
@@ -137,23 +134,17 @@ jobs:
         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
 
       - name: Compute image URI
-        id: image_uri
-        run: |
-          echo "image_uri=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> "$GITHUB_OUTPUT"
+        run: echo "IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
 
       - name: Build FastAPI image
-        run: |
-          docker build -t "${{ steps.image_uri.outputs.image_uri }}" -f Dockerfile .
+        run: docker build -t "$IMAGE_URI" -f Dockerfile .
 
       - name: Push FastAPI image
-        run: |
-          docker push "${{ steps.image_uri.outputs.image_uri }}"
+        run: docker push "$IMAGE_URI"
 
   deploy-api:
     needs: build-and-push-image
     runs-on: do-deploy-runner
-    env:
-      IMAGE_REF: ${{ needs.build-and-push-image.outputs.image_ref }}
     steps:
       - uses: google-github-actions/auth@v2
         with:
@@ -165,6 +156,9 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Compute image URI
+        run: echo "IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
       - name: Download model artifact backup
         uses: actions/download-artifact@v4
         with:
@@ -179,10 +173,10 @@ jobs:
 
       - name: Pull and restart API container
         run: |
-          docker pull ${{ env.IMAGE_REF }}
+          docker pull $IMAGE_URI
           docker stop cost-forecast-api || true
           docker rm cost-forecast-api || true
           docker run -d --name cost-forecast-api \
             --restart unless-stopped \
             -p 8000:8000 \
-            ${{ env.IMAGE_REF }}
+            $IMAGE_URI
