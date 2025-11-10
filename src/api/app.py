@@ -14,6 +14,7 @@ MODEL_ROOT = Path(os.getenv("MODEL_DIR", "artifacts/model"))
 MODEL_CHECKPOINTS_ENV = os.getenv("MODEL_CHECKPOINTS")
 SINGLE_CHECKPOINT_ENV = os.getenv("MODEL_CHECKPOINT")
 DEFAULT_MODEL_FILENAME = "tft_cost_forecast.ckpt"
+MODEL_DISCOVERY_REQUIRED = os.getenv("MODEL_REQUIRED", "1").lower() not in {"0", "false"}
 
 
 def _discover_model_paths() -> Dict[str, Path]:
@@ -42,17 +43,24 @@ def _discover_model_paths() -> Dict[str, Path]:
         if fallback_path.exists():
             paths["default"] = fallback_path
 
-    if not paths:
+    if not paths and MODEL_DISCOVERY_REQUIRED:
         raise FileNotFoundError("No model checkpoints found in MODEL_DIR or via MODEL_CHECKPOINT env vars.")
 
     return paths
 
 
-MODEL_PATHS = _discover_model_paths()
+MODEL_PATHS: Dict[str, Path] = {}
 MODEL_REGISTRY: Dict[str, TemporalFusionTransformer] = {}
-for provider, checkpoint_path in MODEL_PATHS.items():
-    MODEL_REGISTRY[provider] = TemporalFusionTransformer.load_from_checkpoint(checkpoint_path)
-    MODEL_REGISTRY[provider].eval()
+try:
+    MODEL_PATHS = _discover_model_paths()
+except FileNotFoundError as exc:
+    if MODEL_DISCOVERY_REQUIRED:
+        raise
+    print(f"[API] Warning: {exc}. API will start without loaded models.")
+else:
+    for provider, checkpoint_path in MODEL_PATHS.items():
+        MODEL_REGISTRY[provider] = TemporalFusionTransformer.load_from_checkpoint(checkpoint_path)
+        MODEL_REGISTRY[provider].eval()
 
 
 class ForecastRequest(BaseModel):
