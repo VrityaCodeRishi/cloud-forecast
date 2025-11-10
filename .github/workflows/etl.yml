@@ -146,6 +146,18 @@ jobs:
     needs: build-and-push-image
     runs-on: do-deploy-runner
     steps:
+      - name: Download model artifact backup
+        uses: actions/download-artifact@v4
+        with:
+          pattern: tft-model-*
+          merge-multiple: true
+          path: artifacts/model
+
+      - name: Persist model artifacts on runner
+        run: |
+          mkdir -p $HOME/cost-forecast/model
+          cp -R artifacts/model/. $HOME/cost-forecast/model/
+
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
@@ -159,17 +171,6 @@ jobs:
 
       - name: Compute image URI
         run: echo "IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
-      - name: Download model artifact backup
-        uses: actions/download-artifact@v4
-        with:
-          pattern: tft-model-*
-          merge-multiple: true
-          path: artifacts/model
-
-      - name: Persist model artifacts on runner
-        run: |
-          mkdir -p $HOME/cost-forecast/model
-          cp -R artifacts/model/. $HOME/cost-forecast/model/
 
       - name: Pull and restart API container
         run: |
