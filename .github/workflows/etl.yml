@@ -115,12 +115,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download trained model artifacts
+      - name: Download GCP model artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: tft-model-*
-          merge-multiple: true
-          path: artifacts/model
+          name: tft-model-gcp
+          path: artifacts/model/gcp
+
+      - name: Download Azure model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tft-model-azure
+          path: artifacts/model/azure
 
       - uses: google-github-actions/auth@v2
         with:
@@ -146,12 +151,17 @@ jobs:
     needs: build-and-push-image
     runs-on: do-deploy-runner
     steps:
-      - name: Download model artifact backup
+      - name: Download GCP model artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: tft-model-*
-          merge-multiple: true
-          path: artifacts/model
+          name: tft-model-gcp
+          path: artifacts/model/gcp
+
+      - name: Download Azure model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tft-model-azure
+          path: artifacts/model/azure
 
       - name: Persist model artifacts on runner
         run: |
