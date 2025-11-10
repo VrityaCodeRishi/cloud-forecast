@@ -121,6 +121,7 @@ jobs:
         with:
           pattern: tft-model-*
           merge-multiple: true
+          path: artifacts/model
 
       - name: Log in to DigitalOcean Container Registry
         uses: docker/login-action@v3
@@ -154,6 +155,7 @@ jobs:
         with:
           pattern: tft-model-*
           merge-multiple: true
+          path: artifacts/model
 
       - name: Persist model artifacts on runner
         run: |
