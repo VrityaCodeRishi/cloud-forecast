@@ -11,7 +11,6 @@ env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   AR_REPOSITORY: ${{ secrets.GCP_AR_REPOSITORY }}
   AR_LOCATION: ${{ secrets.GCP_AR_LOCATION }}
-  IMAGE_URI: ""
 
 jobs:
   run-etl:
@@ -115,7 +114,7 @@ jobs:
     env:
       IMAGE_TAG: ${{ github.sha }}
     outputs:
-      image_ref: ${{ steps.image-ref.outputs.image_ref }}
+      image_ref: ${{ steps.image_uri.outputs.image_uri }}
     steps:
       - uses: actions/checkout@v4
 
@@ -137,21 +136,18 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
 
+      - name: Compute image URI
+        id: image_uri
+        run: |
+          echo "image_uri=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> "$GITHUB_OUTPUT"
+
       - name: Build FastAPI image
         run: |
-          IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          docker build -t "$IMAGE_URI" -f Dockerfile .
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          docker build -t "${{ steps.image_uri.outputs.image_uri }}" -f Dockerfile .
 
       - name: Push FastAPI image
         run: |
-          docker push $IMAGE_URI
-
-      - name: Set image reference output
-        id: image-ref
-        run: |
-          echo "image_ref=$IMAGE_URI" >> "$GITHUB_OUTPUT"
-          echo "IMAGE_REF=$IMAGE_URI" >> $GITHUB_ENV
+          docker push "${{ steps.image_uri.outputs.image_uri }}"
 
   deploy-api:
     needs: build-and-push-image
