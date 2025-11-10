@@ -108,6 +108,26 @@ def create_datasets(df):
             f"Need at least {effective_min_series_length} points per service."
         )
 
+    series_lengths = (
+        df_filtered.groupby(['provider', 'service'])
+        .size()
+        .reset_index(name='num_points')
+    )
+    shortest_series = int(series_lengths['num_points'].min())
+    if shortest_series < 2:
+        raise ValueError(
+            f"[{PROVIDER_NAME.upper()}] Need at least 2 historical points per service to train, "
+            f"found minimum of {shortest_series}."
+        )
+    if shortest_series <= prediction_length:
+        prediction_length = max(1, shortest_series - 1)
+    max_encoder_allowed = max(1, shortest_series - prediction_length)
+    encoder_length = min(encoder_length, max_encoder_allowed)
+    if encoder_length + prediction_length > shortest_series:
+        prediction_length = max(1, shortest_series - encoder_length)
+
+    training_cutoff = df_filtered['time_idx'].max() - prediction_length
+
     training = TimeSeriesDataSet(
         df_filtered[df_filtered.time_idx <= training_cutoff],
         time_idx='time_idx',
