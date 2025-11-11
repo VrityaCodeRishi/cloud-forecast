@@ -218,6 +218,15 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
     }
 
 
+def _aggregate_summary(lookback_days: int) -> Dict[str, Dict]:
+    results = {}
+    for provider, model in MODEL_REGISTRY.items():
+        summary = _summarize_provider(provider, model, lookback_days)
+        if summary:
+            results[provider] = summary
+    return results
+
+
 @app.get("/health")
 async def health():
     status = {
@@ -257,12 +266,7 @@ async def list_providers():
 
 @app.get("/forecast/summary")
 async def forecast_summary(lookback_days: int = SUMMARY_LOOKBACK_DAYS):
-    results = {}
-    for provider, model in MODEL_REGISTRY.items():
-        summary = _summarize_provider(provider, model, lookback_days)
-        if summary:
-            results[provider] = summary
-
+    results = _aggregate_summary(lookback_days)
     if not results:
         raise HTTPException(status_code=503, detail="No provider summaries available.")
 
@@ -275,11 +279,14 @@ async def forecast_summary(lookback_days: int = SUMMARY_LOOKBACK_DAYS):
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     provider_list = sorted(MODEL_REGISTRY.keys())
+    summary_data = _aggregate_summary(SUMMARY_LOOKBACK_DAYS)
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
             "providers": provider_list,
+            "summary": summary_data,
+            "lookback_days": SUMMARY_LOOKBACK_DAYS,
         },
     )
 

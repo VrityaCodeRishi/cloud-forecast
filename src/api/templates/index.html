@@ -14,9 +14,23 @@
 
   <main>
     <section class="panel" id="summary-panel">
-      <h2>Provider Projections</h2>
+      <h2>Provider Projections (last {{ lookback_days }} days)</h2>
       <div id="summary" class="summary-grid">
-        <p class="muted">Loading provider forecasts...</p>
+        {% if summary %}
+          {% for provider, stats in summary.items() %}
+            <article class="summary-card">
+              <h3>{{ provider.upper() }}</h3>
+              <p class="muted">Aggregated forecast</p>
+              <div class="figures">
+                <div><span>Weekly</span><strong>{{ '%.2f' % stats.weekly }}</strong></div>
+                <div><span>Monthly</span><strong>{{ '%.2f' % stats.monthly }}</strong></div>
+                <div><span>Yearly</span><strong>{{ '%.2f' % stats.yearly }}</strong></div>
+              </div>
+            </article>
+          {% endfor %}
+        {% else %}
+          <p class="muted">No provider summaries available.</p>
+        {% endif %}
       </div>
     </section>
 

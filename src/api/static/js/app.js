@@ -1,48 +1,5 @@
 const form = document.getElementById("forecast-form");
 const resultsEl = document.getElementById("results");
-const summaryEl = document.getElementById("summary");
-
-document.addEventListener("DOMContentLoaded", () => {
-  loadSummary();
-});
-
-async function loadSummary() {
-  if (!summaryEl) return;
-  summaryEl.innerHTML = '<p class="muted">Loading provider forecasts...</p>';
-  try {
-    const response = await fetch("/forecast/summary");
-    if (!response.ok) throw new Error("Unable to load summary");
-    const data = await response.json();
-    renderSummary(data.providers || {});
-  } catch (error) {
-    summaryEl.innerHTML = `<p class="muted">${error.message}</p>`;
-  }
-}
-
-function renderSummary(providers) {
-  const entries = Object.entries(providers);
-  if (!entries.length) {
-    summaryEl.innerHTML = '<p class="muted">No provider summaries available.</p>';
-    return;
-  }
-  const cards = entries
-    .map(([provider, stats]) => {
-      return `
-        <article class="summary-card">
-          <h3>${provider.toUpperCase()}</h3>
-          <p class="muted">Aggregated forecast</p>
-          <div class="figures">
-            <div><span>Weekly</span><strong>${formatCurrency(stats.weekly)}</strong></div>
-            <div><span>Monthly</span><strong>${formatCurrency(stats.monthly)}</strong></div>
-            <div><span>Yearly</span><strong>${formatCurrency(stats.yearly)}</strong></div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-  summaryEl.innerHTML = cards;
-}
-
 const formatCurrency = (value) =>
   Number(value).toLocaleString(undefined, {
     style: "currency",
