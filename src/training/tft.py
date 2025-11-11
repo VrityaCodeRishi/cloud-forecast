@@ -16,7 +16,7 @@ from pytorch_forecasting.data.encoders import NaNLabelEncoder
 
 POSTGRES_CONN_STR = os.getenv("POSTGRES_CONN_STR", "")
 PROVIDER_NAME = os.getenv("PROVIDER_NAME", "gcp").lower()
-MIN_SERIES_POINTS = int(os.getenv("MIN_SERIES_POINTS", "3"))
+MIN_SERIES_POINTS = int(os.getenv("MIN_SERIES_POINTS", "1"))
 BATCH_SIZE = 64
 MAX_EPOCHS = 100
 MAX_ENCODER_LENGTH = 30
