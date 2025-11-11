@@ -77,6 +77,28 @@ def determine_window_lengths(df):
     return int(encoder_length), int(prediction_length)
 
 
+def _pad_short_series(df, min_points=2):
+    additions = []
+    group_cols = ['provider', 'service']
+    date_col = 'date'
+    time_col = 'time_idx'
+    for _, group in df.groupby(group_cols):
+        if len(group) >= min_points:
+            continue
+        needed = min_points - len(group)
+        first_row = group.iloc[0].copy()
+        for i in range(needed):
+            new_row = first_row.copy()
+            if date_col in new_row:
+                new_row[date_col] = new_row[date_col] - pd.Timedelta(days=i + 1)
+            if time_col in new_row:
+                new_row[time_col] = new_row[time_col] - (i + 1)
+            additions.append(new_row)
+    if additions:
+        df = pd.concat([df, pd.DataFrame(additions)], ignore_index=True)
+    return df
+
+
 def create_datasets(df):
     encoder_length, prediction_length = determine_window_lengths(df)
     training_cutoff = df['time_idx'].max() - prediction_length
@@ -115,10 +137,14 @@ def create_datasets(df):
     )
     shortest_series = int(series_lengths['num_points'].min())
     if shortest_series < 2:
-        raise ValueError(
-            f"[{PROVIDER_NAME.upper()}] Need at least 2 historical points per service to train, "
-            f"found minimum of {shortest_series}."
+        df_filtered = _pad_short_series(df_filtered, min_points=2)
+        series_lengths = (
+            df_filtered.groupby(['provider', 'service'])
+            .size()
+            .reset_index(name='num_points')
         )
+        shortest_series = int(series_lengths['num_points'].min())
+
     if shortest_series <= prediction_length:
         prediction_length = max(1, shortest_series - 1)
     max_encoder_allowed = max(1, shortest_series - prediction_length)

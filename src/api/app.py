@@ -256,7 +256,7 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
         "monthly": provider_monthly,
         "yearly": provider_yearly,
         "services": service_details,
-        "currency": provider_currency or "USD",
+        "currency": provider_currency or TARGET_SUMMARY_CURRENCY or "USD",
     }
 
 
