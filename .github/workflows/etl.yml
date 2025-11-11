@@ -1,209 +1,209 @@
-name: ETL-Train-Deploy
+# name: ETL-Train-Deploy
 
-on:
-  schedule:
-    - cron: "0 * * * *"
-  workflow_dispatch:
+# on:
+#   schedule:
+#     - cron: "0 * * * *"
+#   workflow_dispatch:
 
-env:
-  PYTHON_VERSION: "3.11"
-  IMAGE_NAME: cost-forecast-api
-  IMAGE_TAG: ${{ github.sha }}
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  AR_REPOSITORY: ${{ secrets.GCP_AR_REPOSITORY }}
-  AR_LOCATION: ${{ secrets.GCP_AR_LOCATION }}
+# env:
+#   PYTHON_VERSION: "3.11"
+#   IMAGE_NAME: cost-forecast-api
+#   IMAGE_TAG: ${{ github.sha }}
+#   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+#   AR_REPOSITORY: ${{ secrets.GCP_AR_REPOSITORY }}
+#   AR_LOCATION: ${{ secrets.GCP_AR_LOCATION }}
 
-jobs:
-  run-etl:
-    runs-on: etl-runner
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      BIGQUERY_DATASET: all_billing_data
-      GCP_BILLING_TABLE_PATTERN: gcp_billing_export_resource_v1_*
-      GCP_POSTGRES_CONN: ${{ secrets.GCP_POSTGRES_CONN }}
-      AZURE_POSTGRES_CONN: ${{ secrets.AZURE_POSTGRES_CONN }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-    steps:
-      - uses: actions/checkout@v4
+# jobs:
+#   run-etl:
+#     runs-on: etl-runner
+#     permissions:
+#       contents: read
+#       id-token: write
+#     env:
+#       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+#       BIGQUERY_DATASET: all_billing_data
+#       GCP_BILLING_TABLE_PATTERN: gcp_billing_export_resource_v1_*
+#       GCP_POSTGRES_CONN: ${{ secrets.GCP_POSTGRES_CONN }}
+#       AZURE_POSTGRES_CONN: ${{ secrets.AZURE_POSTGRES_CONN }}
+#       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+#       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+#       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+#       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: ${{ env.PYTHON_VERSION }}
 
-      - id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+#       - id: auth
+#         uses: google-github-actions/auth@v2
+#         with:
+#           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
 
-      - name: Install dependencies
-        run: pip install --no-cache-dir -r requirements.txt
+#       - name: Install dependencies
+#         run: pip install --no-cache-dir -r requirements.txt
 
-      - name: Run ETL
-        env:
-          GOOGLE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-        run: python ETL.py
+#       - name: Run ETL
+#         env:
+#           GOOGLE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+#         run: python ETL.py
 
-  train-gcp:
-    needs: run-etl
-    runs-on: gpu-training-runner
-    env:
-      PROVIDER_NAME: gcp
-      MODEL_ARTIFACT_DIR: artifacts/model/gcp
-      MODEL_ARTIFACT_PATH: artifacts/model/gcp/tft_cost_forecast.ckpt
-      POSTGRES_CONN_STR: ${{ secrets.GCP_POSTGRES_CONN }}
-    steps:
-      - uses: actions/checkout@v4
+#   train-gcp:
+#     needs: run-etl
+#     runs-on: gpu-training-runner
+#     env:
+#       PROVIDER_NAME: gcp
+#       MODEL_ARTIFACT_DIR: artifacts/model/gcp
+#       MODEL_ARTIFACT_PATH: artifacts/model/gcp/tft_cost_forecast.ckpt
+#       POSTGRES_CONN_STR: ${{ secrets.GCP_POSTGRES_CONN }}
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install training dependencies
-        run: pip install --no-cache-dir -r requirements.txt
+#       - name: Install training dependencies
+#         run: pip install --no-cache-dir -r requirements.txt
 
-      - name: Train Temporal Fusion Transformer
-        run: python -m src.training.tft
+#       - name: Train Temporal Fusion Transformer
+#         run: python -m src.training.tft
 
-      - name: Upload model artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tft-model-gcp
-          path: artifacts/model/gcp
-          if-no-files-found: error
-          retention-days: 5
+#       - name: Upload model artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: tft-model-gcp
+#           path: artifacts/model/gcp
+#           if-no-files-found: error
+#           retention-days: 5
 
-  train-azure:
-    needs: run-etl
-    runs-on: gpu-training-runner
-    env:
-      PROVIDER_NAME: azure
-      MODEL_ARTIFACT_DIR: artifacts/model/azure
-      MODEL_ARTIFACT_PATH: artifacts/model/azure/tft_cost_forecast.ckpt
-      POSTGRES_CONN_STR: ${{ secrets.AZURE_POSTGRES_CONN }}
-    steps:
-      - uses: actions/checkout@v4
+#   train-azure:
+#     needs: run-etl
+#     runs-on: gpu-training-runner
+#     env:
+#       PROVIDER_NAME: azure
+#       MODEL_ARTIFACT_DIR: artifacts/model/azure
+#       MODEL_ARTIFACT_PATH: artifacts/model/azure/tft_cost_forecast.ckpt
+#       POSTGRES_CONN_STR: ${{ secrets.AZURE_POSTGRES_CONN }}
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install training dependencies
-        run: pip install --no-cache-dir -r requirements.txt
+#       - name: Install training dependencies
+#         run: pip install --no-cache-dir -r requirements.txt
 
-      - name: Train Temporal Fusion Transformer
-        run: python -m src.training.tft
+#       - name: Train Temporal Fusion Transformer
+#         run: python -m src.training.tft
 
-      - name: Upload model artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tft-model-azure
-          path: artifacts/model/azure
-          if-no-files-found: error
-          retention-days: 5
+#       - name: Upload model artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: tft-model-azure
+#           path: artifacts/model/azure
+#           if-no-files-found: error
+#           retention-days: 5
 
-  build-and-push-image:
-    needs:
-      - train-gcp
-      - train-azure
-    runs-on: etl-runner
-    steps:
-      - uses: actions/checkout@v4
+#   build-and-push-image:
+#     needs:
+#       - train-gcp
+#       - train-azure
+#     runs-on: etl-runner
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Download GCP model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tft-model-gcp
-          path: artifacts/model/gcp
+#       - name: Download GCP model artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: tft-model-gcp
+#           path: artifacts/model/gcp
 
-      - name: Download Azure model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tft-model-azure
-          path: artifacts/model/azure
+#       - name: Download Azure model artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: tft-model-azure
+#           path: artifacts/model/azure
 
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+#       - uses: google-github-actions/auth@v2
+#         with:
+#           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
 
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+#       - uses: google-github-actions/setup-gcloud@v2
+#         with:
+#           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
+#       - name: Configure Docker for Artifact Registry
+#         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
 
-      - name: Compute image URI
-        run: echo "IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
+#       - name: Compute image URI
+#         run: echo "IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
 
-      - name: Build FastAPI image
-        run: docker build -t "$IMAGE_URI" -f Dockerfile .
+#       - name: Build FastAPI image
+#         run: docker build -t "$IMAGE_URI" -f Dockerfile .
 
-      - name: Push FastAPI image
-        run: docker push "$IMAGE_URI"
+#       - name: Push FastAPI image
+#         run: docker push "$IMAGE_URI"
 
-  deploy-api:
-    needs: build-and-push-image
-    runs-on: do-deploy-runner
-    steps:
-      - name: Download GCP model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tft-model-gcp
-          path: artifacts/model/gcp
+#   deploy-api:
+#     needs: build-and-push-image
+#     runs-on: do-deploy-runner
+#     steps:
+#       - name: Download GCP model artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: tft-model-gcp
+#           path: artifacts/model/gcp
 
-      - name: Download Azure model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tft-model-azure
-          path: artifacts/model/azure
+#       - name: Download Azure model artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: tft-model-azure
+#           path: artifacts/model/azure
 
-      - name: Persist model artifacts on runner
-        run: |
-          mkdir -p $HOME/cost-forecast/model
-          cp -R artifacts/model/. $HOME/cost-forecast/model/
+#       - name: Persist model artifacts on runner
+#         run: |
+#           mkdir -p $HOME/cost-forecast/model
+#           cp -R artifacts/model/. $HOME/cost-forecast/model/
 
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+#       - uses: google-github-actions/auth@v2
+#         with:
+#           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
 
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+#       - uses: google-github-actions/setup-gcloud@v2
+#         with:
+#           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
+#       - name: Configure Docker for Artifact Registry
+#         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev --quiet
 
-      - name: Compute image URI
-        run: echo "IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
+#       - name: Compute image URI
+#         run: echo "IMAGE_URI=${{ env.AR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
 
-      - name: Pull and restart API container
-        run: |
-          docker pull $IMAGE_URI
-          docker stop cost-forecast-api || true
-          docker rm cost-forecast-api || true
-          docker run -d --name cost-forecast-api \
-            --restart unless-stopped \
-            -v $HOME/cost-forecast/model:/app/model \
-            -e GCP_POSTGRES_CONN='${{ secrets.GCP_POSTGRES_CONN }}' \
-            -e AZURE_POSTGRES_CONN='${{ secrets.AZURE_POSTGRES_CONN }}' \
-            -p 80:8000 \
-            $IMAGE_URI
+#       - name: Pull and restart API container
+#         run: |
+#           docker pull $IMAGE_URI
+#           docker stop cost-forecast-api || true
+#           docker rm cost-forecast-api || true
+#           docker run -d --name cost-forecast-api \
+#             --restart unless-stopped \
+#             -v $HOME/cost-forecast/model:/app/model \
+#             -e GCP_POSTGRES_CONN='${{ secrets.GCP_POSTGRES_CONN }}' \
+#             -e AZURE_POSTGRES_CONN='${{ secrets.AZURE_POSTGRES_CONN }}' \
+#             -p 80:8000 \
+#             $IMAGE_URI
 
-      - name: Health check
-        run: |
-          for attempt in {1..6}; do
-            if curl -fsS http://127.0.0.1/health > /dev/null; then
-              echo "API is healthy"
-              exit 0
-            fi
-            echo "Health check failed on attempt $attempt, retrying..."
-            sleep 10
-          done
-          echo "API health check failed after retries" >&2
-          exit 1
+#       - name: Health check
+#         run: |
+#           for attempt in {1..6}; do
+#             if curl -fsS http://127.0.0.1/health > /dev/null; then
+#               echo "API is healthy"
+#               exit 0
+#             fi
+#             echo "Health check failed on attempt $attempt, retrying..."
+#             sleep 10
+#           done
+#           echo "API health check failed after retries" >&2
+#           exit 1
