@@ -183,10 +183,15 @@ def create_datasets(df):
             'region': NaNLabelEncoder(add_nan=True),
             'currency': NaNLabelEncoder(add_nan=True),
         },
+        allow_missing_timesteps=True,
     )
 
     validation = TimeSeriesDataSet.from_dataset(
-        training, df_filtered, predict=True, stop_randomization=True
+        training,
+        df_filtered,
+        predict=True,
+        stop_randomization=True,
+        allow_missing_timesteps=True,
     )
 
     return training, validation
