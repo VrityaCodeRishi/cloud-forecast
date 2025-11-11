@@ -33,6 +33,8 @@ PROVIDER_CONNECTIONS = {
     "gcp": os.getenv("GCP_POSTGRES_CONN"),
     "azure": os.getenv("AZURE_POSTGRES_CONN"),
 }
+USD_TO_INR_RATE = float(os.getenv("USD_TO_INR_RATE", "83.0"))
+TARGET_SUMMARY_CURRENCY = os.getenv("SUMMARY_TARGET_CURRENCY", "INR").upper()
 
 
 def _discover_model_paths() -> Dict[str, Path]:
@@ -140,8 +142,22 @@ def _load_recent_costs(provider: str, lookback_days: int) -> pd.DataFrame:
     return df
 
 
+def _pad_costs(costs: List[float], desired_length: int) -> List[float]:
+    if not costs:
+        return [0.0] * desired_length
+    if len(costs) >= desired_length:
+        return costs
+    pad_value = costs[0]
+    pad_len = desired_length - len(costs)
+    return [pad_value] * pad_len + costs
+
+
 def _build_request_from_series(provider: str, service: str, region: str, currency: str, costs: List[float], max_encoder: int) -> ForecastRequest:
-    recent = costs[-max_encoder:]
+    recent = costs[-max_encoder:] if max_encoder else costs
+    if max_encoder and len(recent) < max_encoder:
+        recent = _pad_costs(recent, max_encoder)
+    if not recent:
+        recent = [0.0]
     return ForecastRequest(
         provider=provider,
         service=service,
@@ -165,7 +181,7 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
         return {}
 
     dataset_params = getattr(model.hparams, "dataset_parameters", {}) or {}
-    max_encoder = dataset_params.get("max_encoder_length", len(df))
+    max_encoder = dataset_params.get("max_encoder_length") or len(df)
     quantile_idx = _get_quantile_index(model, 0.5)
 
     provider_weekly = 0.0
@@ -178,7 +194,7 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
     for (service, region, currency), service_df in grouped:
         service_df = service_df.sort_values("date")
         costs = service_df["cost"].astype(float).tolist()
-        if len(costs) < 2:
+        if not costs:
             continue
         try:
             request = _build_request_from_series(provider, service or "unknown", region or "unknown", currency or "USD", costs, max_encoder)
@@ -190,16 +206,34 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
             continue
 
         horizon_days = max(1, len(median))
-        weekly = max(0.0, sum(median))
+        weekly = sum(median)
         daily_avg = weekly / horizon_days
-        monthly = max(0.0, daily_avg * 30)
-        yearly = max(0.0, monthly * 12)
+        monthly = daily_avg * 30
+        yearly = monthly * 12
+
+        currency_code = (currency or "USD").upper()
+        if currency_code != TARGET_SUMMARY_CURRENCY:
+            if currency_code == "USD" and TARGET_SUMMARY_CURRENCY == "INR" and USD_TO_INR_RATE:
+                factor = USD_TO_INR_RATE
+                currency_code = TARGET_SUMMARY_CURRENCY
+                weekly *= factor
+                monthly *= factor
+                yearly *= factor
+            elif currency_code == "INR" and TARGET_SUMMARY_CURRENCY == "USD" and USD_TO_INR_RATE:
+                factor = 1.0 / USD_TO_INR_RATE
+                currency_code = TARGET_SUMMARY_CURRENCY
+                weekly *= factor
+                monthly *= factor
+                yearly *= factor
+
+        weekly = max(0.0, weekly)
+        monthly = max(0.0, monthly)
+        yearly = max(0.0, yearly)
 
         provider_weekly += weekly
         provider_monthly += monthly
         provider_yearly += yearly
 
-        currency_code = (currency or "USD").upper()
         if provider_currency is None:
             provider_currency = currency_code
         elif provider_currency != currency_code:
