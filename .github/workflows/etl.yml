@@ -190,6 +190,8 @@ jobs:
           docker run -d --name cost-forecast-api \
             --restart unless-stopped \
             -v $HOME/cost-forecast/model:/app/model \
+            -e GCP_POSTGRES_CONN='${{ secrets.GCP_POSTGRES_CONN }}' \
+            -e AZURE_POSTGRES_CONN='${{ secrets.AZURE_POSTGRES_CONN }}' \
             -p 80:8000 \
             $IMAGE_URI
 
