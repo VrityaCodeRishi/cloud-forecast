@@ -171,6 +171,7 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
     provider_weekly = 0.0
     provider_monthly = 0.0
     provider_yearly = 0.0
+    provider_currency = None
     service_details = []
 
     grouped = df.groupby(["service", "region", "currency"], dropna=False)
@@ -189,19 +190,25 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
             continue
 
         horizon_days = max(1, len(median))
-        weekly = sum(median)
+        weekly = max(0.0, sum(median))
         daily_avg = weekly / horizon_days
-        monthly = daily_avg * 30
-        yearly = monthly * 12
+        monthly = max(0.0, daily_avg * 30)
+        yearly = max(0.0, monthly * 12)
 
         provider_weekly += weekly
         provider_monthly += monthly
         provider_yearly += yearly
 
+        currency_code = (currency or "USD").upper()
+        if provider_currency is None:
+            provider_currency = currency_code
+        elif provider_currency != currency_code:
+            provider_currency = "MULTI"
+
         service_details.append({
             "service": service or "unknown",
             "region": region or "unknown",
-            "currency": currency or "USD",
+            "currency": currency_code,
             "weekly": weekly,
             "monthly": monthly,
             "yearly": yearly,
@@ -215,6 +222,7 @@ def _summarize_provider(provider: str, model: TemporalFusionTransformer, lookbac
         "monthly": provider_monthly,
         "yearly": provider_yearly,
         "services": service_details,
+        "currency": provider_currency or "USD",
     }
 
 

@@ -20,11 +20,11 @@
           {% for provider, stats in summary.items() %}
             <article class="summary-card">
               <h3>{{ provider.upper() }}</h3>
-              <p class="muted">Aggregated forecast</p>
+              <p class="muted">Aggregated forecast ({{ stats.currency or 'USD' }})</p>
               <div class="figures">
-                <div><span>Weekly</span><strong>{{ '%.2f' % stats.weekly }}</strong></div>
-                <div><span>Monthly</span><strong>{{ '%.2f' % stats.monthly }}</strong></div>
-                <div><span>Yearly</span><strong>{{ '%.2f' % stats.yearly }}</strong></div>
+                <div><span>Weekly</span><strong>{{ stats.currency or 'USD' }} {{ '%.2f' % stats.weekly }}</strong></div>
+                <div><span>Monthly</span><strong>{{ stats.currency or 'USD' }} {{ '%.2f' % stats.monthly }}</strong></div>
+                <div><span>Yearly</span><strong>{{ stats.currency or 'USD' }} {{ '%.2f' % stats.yearly }}</strong></div>
               </div>
             </article>
           {% endfor %}
