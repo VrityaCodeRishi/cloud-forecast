@@ -35,6 +35,13 @@ PROVIDER_CONNECTIONS = {
 }
 USD_TO_INR_RATE = float(os.getenv("USD_TO_INR_RATE", "83.0"))
 TARGET_SUMMARY_CURRENCY = os.getenv("SUMMARY_TARGET_CURRENCY", "INR").upper()
+PROVIDER_BASELINES = {
+    "azure": float(os.getenv("AZURE_BASELINE_MONTHLY_INR", "3000")),
+    "gcp": float(os.getenv("GCP_BASELINE_MONTHLY_INR", "0")),
+}
+SUMMARY_PROVIDERS = [p.strip().lower() for p in os.getenv("SUMMARY_PROVIDERS", "azure,gcp").split(",") if p.strip()]
+if not SUMMARY_PROVIDERS:
+    SUMMARY_PROVIDERS = ["azure", "gcp"]
 
 
 def _discover_model_paths() -> Dict[str, Path]:
@@ -295,9 +302,33 @@ def _aggregate_summary(lookback_days: int) -> Dict[str, Dict]:
     results = {}
     for provider, model in MODEL_REGISTRY.items():
         summary = _summarize_provider(provider, model, lookback_days)
+        summary = _apply_baseline(provider, summary)
         if summary:
             results[provider] = summary
     return results
+
+
+def _apply_baseline(provider: str, summary: Dict) -> Dict:
+    baseline = PROVIDER_BASELINES.get(provider, 0)
+    if baseline <= 0 and not summary:
+        return summary
+
+    if not summary and baseline > 0:
+        return {
+            "weekly": baseline / 4,
+            "monthly": baseline,
+            "yearly": baseline * 12,
+            "services": [],
+            "currency": TARGET_SUMMARY_CURRENCY,
+        }
+
+    if baseline > 0 and summary["monthly"] < baseline:
+        summary["monthly"] = baseline
+        summary["weekly"] = baseline / 4
+        summary["yearly"] = baseline * 12
+        summary["currency"] = TARGET_SUMMARY_CURRENCY
+
+    return summary
 
 
 @app.get("/health")
@@ -351,15 +382,14 @@ async def forecast_summary(lookback_days: int = SUMMARY_LOOKBACK_DAYS):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    provider_list = sorted(MODEL_REGISTRY.keys())
     summary_data = _aggregate_summary(SUMMARY_LOOKBACK_DAYS)
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
-            "providers": provider_list,
             "summary": summary_data,
             "lookback_days": SUMMARY_LOOKBACK_DAYS,
+            "desired_providers": SUMMARY_PROVIDERS,
         },
     )
 

@@ -1,10 +1,18 @@
 const form = document.getElementById("forecast-form");
 const resultsEl = document.getElementById("results");
-const formatCurrency = (value) =>
-  Number(value).toLocaleString(undefined, {
+
+if (!form || !resultsEl) {
+  return;
+}
+
+const formatCurrency = (value) => {
+  const currencyField = document.getElementById("currency");
+  const code = currencyField ? currencyField.value.trim().toUpperCase() : "INR";
+  return Number(value).toLocaleString(undefined, {
     style: "currency",
-    currency: (document.getElementById("currency").value || "USD").trim().toUpperCase(),
+    currency: code,
   });
+};
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();

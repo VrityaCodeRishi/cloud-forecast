@@ -12,74 +12,27 @@
     <p>Compare near-term, monthly, and yearly projections for your GCP and Azure workloads.</p>
   </header>
 
-  <main>
+  <main class="dashboard">
     <section class="panel" id="summary-panel">
       <h2>Provider Projections</h2>
-      <p class="muted">Based on the most recent {{ lookback_days }} days of spend</p>
-      <div id="summary" class="summary-grid">
-          {% if summary %}
-            {% for provider, stats in summary.items() %}
-            <article class="summary-card">
-              <h3>{{ provider.upper() }}</h3>
-              <p class="muted">Aggregated forecast ({{ stats.currency or 'USD' }})</p>
+      <p class="muted">Based on the most recent spend</p>
+      <div class="summary-grid centered">
+        {% for provider in desired_providers %}
+          {% set stats = summary.get(provider) %}
+          <article class="summary-card summary-card--large">
+            <h3>{{ provider.upper() }}</h3>
+            {% if stats %}
+              <p class="muted">Aggregated projection ({{ stats.currency or 'INR' }})</p>
               <div class="figures">
-                <div><span>Weekly</span><strong>{{ stats.currency or 'USD' }} {{ '{:,.4f}'.format(stats.weekly) }}</strong></div>
-                <div><span>Monthly</span><strong>{{ stats.currency or 'USD' }} {{ '{:,.4f}'.format(stats.monthly) }}</strong></div>
-                <div><span>Yearly</span><strong>{{ stats.currency or 'USD' }} {{ '{:,.4f}'.format(stats.yearly) }}</strong></div>
+                <div><span>Weekly</span><strong>{{ stats.currency or 'INR' }} {{ '{:,.4f}'.format(stats.weekly) }}</strong></div>
+                <div><span>Monthly</span><strong>{{ stats.currency or 'INR' }} {{ '{:,.4f}'.format(stats.monthly) }}</strong></div>
+                <div><span>Yearly</span><strong>{{ stats.currency or 'INR' }} {{ '{:,.4f}'.format(stats.yearly) }}</strong></div>
               </div>
-            </article>
-          {% endfor %}
-        {% else %}
-          <p class="muted">No provider summaries available.</p>
-        {% endif %}
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>Request Forecast</h2>
-      <form id="forecast-form">
-        <label>
-          Provider
-          <select name="provider" id="provider">
-            {% for provider in providers %}
-            <option value="{{ provider }}">{{ provider|upper }}</option>
-            {% endfor %}
-          </select>
-        </label>
-
-        <label>
-          Service
-          <input type="text" name="service" id="service" placeholder="e.g., Cloud SQL" required />
-        </label>
-
-        <label>
-          Region
-          <input type="text" name="region" id="region" placeholder="e.g., us-central1" required />
-        </label>
-
-        <label>
-          Currency
-          <input type="text" name="currency" id="currency" value="USD" required />
-        </label>
-
-        <label>
-          Time Index Start
-          <input type="number" name="time_idx_start" id="time_idx_start" placeholder="1500" required />
-        </label>
-
-        <label>
-          Recent Costs (comma separated, most recent last)
-          <textarea id="recent_costs" name="recent_costs" rows="4" placeholder="25.4, 26.1, 24.9, ..." required></textarea>
-        </label>
-
-        <button type="submit">Run Forecast</button>
-      </form>
-    </section>
-
-    <section class="panel" id="results-panel">
-      <h2>Forecast Results</h2>
-      <div id="results">
-        <p class="muted">Submit a forecast request to see predictions.</p>
+            {% else %}
+              <p class="muted">Forecast not available yet.</p>
+            {% endif %}
+          </article>
+        {% endfor %}
       </div>
     </section>
   </main>

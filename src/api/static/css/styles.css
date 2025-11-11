@@ -19,14 +19,10 @@ header h1 {
   margin-bottom: 0.5rem;
 }
 
-main {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-#summary-panel {
-  grid-column: 1 / -1;
+main.dashboard {
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem;
 }
 
 .panel {
@@ -34,54 +30,8 @@ main {
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
-}
-
-label {
-  display: block;
-  margin-bottom: 1rem;
-  font-weight: 600;
-}
-
-input,
-select,
-textarea {
+  max-width: 960px;
   width: 100%;
-  margin-top: 0.35rem;
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid #cbd5f5;
-  font-family: inherit;
-  font-size: 1rem;
-}
-
-button {
-  width: 100%;
-  padding: 0.85rem 1rem;
-  border: none;
-  border-radius: 0.75rem;
-  background: #4f46e5;
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-button:hover {
-  background: #4338ca;
-}
-
-#results table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-#results th,
-#results td {
-  padding: 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
 }
 
 .muted {
@@ -119,14 +69,24 @@ footer {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.summary-grid.centered {
+  justify-items: center;
 }
 
 .summary-card {
   background: #eef2ff;
   border-radius: 1rem;
   padding: 1rem;
+  text-align: center;
+}
+
+.summary-card--large {
+  width: 100%;
+  max-width: 360px;
 }
 
 .summary-card h3 {
