@@ -25,6 +25,10 @@ main {
   gap: 1.5rem;
 }
 
+#summary-panel {
+  grid-column: 1 / -1;
+}
+
 .panel {
   background: #fff;
   border-radius: 1rem;
@@ -111,4 +115,35 @@ footer {
   text-align: center;
   margin-top: 2rem;
   color: #94a3b8;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  background: #eef2ff;
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.summary-card h3 {
+  margin: 0 0 0.25rem;
+}
+
+.summary-card .figures {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.summary-card .figures span {
+  font-size: 0.85rem;
+  color: #6366f1;
+}
+
+.summary-card .figures strong {
+  font-size: 1.15rem;
 }
