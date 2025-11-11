@@ -99,6 +99,26 @@ def _pad_short_series(df, min_points=2):
     return df
 
 
+def _fill_missing_dates(df):
+    frames = []
+    for (provider, service), group in df.groupby(['provider', 'service']):
+        group = group.sort_values('date')
+        all_dates = pd.date_range(group['date'].min(), group['date'].max(), freq='D')
+        expanded = group.set_index('date').reindex(all_dates).reset_index().rename(columns={'index': 'date'})
+        expanded['provider'] = provider
+        expanded['service'] = service
+        for col in ['region', 'currency']:
+            if col in expanded:
+                expanded[col] = expanded[col].ffill().bfill().fillna('unknown')
+        expanded['cost'] = expanded['cost'].fillna(0.0)
+        frames.append(expanded)
+    result = pd.concat(frames, ignore_index=True)
+    result['date'] = pd.to_datetime(result['date'])
+    result = result.sort_values('date')
+    result['time_idx'] = (result['date'] - result['date'].min()).dt.days
+    return result
+
+
 def create_datasets(df):
     encoder_length, prediction_length = determine_window_lengths(df)
     training_cutoff = df['time_idx'].max() - prediction_length
@@ -129,6 +149,8 @@ def create_datasets(df):
             f"[{PROVIDER_NAME.upper()}] Not enough history per service to train TFT. "
             f"Need at least {effective_min_series_length} points per service."
         )
+
+    df_filtered = _fill_missing_dates(df_filtered)
 
     series_lengths = (
         df_filtered.groupby(['provider', 'service'])
