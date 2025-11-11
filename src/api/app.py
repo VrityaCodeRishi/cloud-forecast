@@ -36,7 +36,7 @@ PROVIDER_CONNECTIONS = {
 USD_TO_INR_RATE = float(os.getenv("USD_TO_INR_RATE", "83.0"))
 TARGET_SUMMARY_CURRENCY = os.getenv("SUMMARY_TARGET_CURRENCY", "INR").upper()
 PROVIDER_BASELINES = {
-    "azure": float(os.getenv("AZURE_BASELINE_MONTHLY_INR", "3000")),
+    "azure": float(os.getenv("AZURE_BASELINE_MONTHLY_INR", "0")),
     "gcp": float(os.getenv("GCP_BASELINE_MONTHLY_INR", "0")),
 }
 SUMMARY_PROVIDERS = [p.strip().lower() for p in os.getenv("SUMMARY_PROVIDERS", "azure,gcp").split(",") if p.strip()]
