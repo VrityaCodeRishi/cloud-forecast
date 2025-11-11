@@ -22,11 +22,13 @@
           <article class="summary-card summary-card--large">
             <h3>{{ provider.upper() }}</h3>
             {% if stats %}
-              <p class="muted">Aggregated projection ({{ stats.currency or 'INR' }})</p>
+              {% set currency_code = (stats.currency or 'INR').upper() %}
+              {% set currency_symbol = '₹' if currency_code == 'INR' else currency_code %}
+              <p class="muted">Aggregated projection ({{ currency_code }})</p>
               <div class="figures">
-                <div><span>Weekly</span><strong>{{ stats.currency or 'INR' }} {{ '{:,.4f}'.format(stats.weekly) }}</strong></div>
-                <div><span>Monthly</span><strong>{{ stats.currency or 'INR' }} {{ '{:,.4f}'.format(stats.monthly) }}</strong></div>
-                <div><span>Yearly</span><strong>{{ stats.currency or 'INR' }} {{ '{:,.4f}'.format(stats.yearly) }}</strong></div>
+                <div><span>Weekly</span><strong>{{ currency_symbol }} {{ '{:,.4f}'.format(stats.weekly) }}</strong></div>
+                <div><span>Monthly</span><strong>{{ currency_symbol }} {{ '{:,.4f}'.format(stats.monthly) }}</strong></div>
+                <div><span>Yearly</span><strong>{{ currency_symbol }} {{ '{:,.4f}'.format(stats.yearly) }}</strong></div>
               </div>
             {% else %}
               <p class="muted">Forecast not available yet.</p>

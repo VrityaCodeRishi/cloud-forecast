@@ -8,7 +8,11 @@ if (!form || !resultsEl) {
 const formatCurrency = (value) => {
   const currencyField = document.getElementById("currency");
   const code = currencyField ? currencyField.value.trim().toUpperCase() : "INR";
-  return Number(value).toLocaleString(undefined, {
+  const amount = Number(value);
+  if (code === "INR") {
+    return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+  }
+  return amount.toLocaleString(undefined, {
     style: "currency",
     currency: code,
   });

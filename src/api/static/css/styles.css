@@ -108,3 +108,10 @@ footer {
 .summary-card .figures strong {
   font-size: 1.3rem;
 }
+
+.summary-card .figures div {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  align-items: baseline;
+}
