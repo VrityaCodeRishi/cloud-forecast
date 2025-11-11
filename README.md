@@ -74,6 +74,11 @@ terraform apply
 
 Terraform outputs include VPC/subnet names, Postgres connection strings, etc., which are needed for the ETL step and GitHub runner secrets.
 
+### Enable Billing Exports
+
+- **GCP**: Enable the built-in BigQuery billing export for the Google Cloud project (`all_billing_data.gcp_billing_export_resource_v1_*`). The ETL job assumes the dataset/table already exists and contains the last ~180 days of cost rows.
+- **Azure**: Grant the service principal (same credentials used in Terraform/ETL) access to Cost Management. The ETL reaches the Cost Management API (`Microsoft.CostManagement/query`) using those credentials.
+
 ---
 
 ## GitHub Actions Pipeline
