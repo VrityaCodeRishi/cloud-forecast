@@ -248,9 +248,18 @@ def train_model(training, validation):
 
     trainer.fit(tft, train_dataloader, val_dataloader)
     trainer.save_checkpoint(str(MODEL_ARTIFACT_PATH))
+    metrics = {
+        "final_train_loss": trainer.callback_metrics.get("train_loss")
+        if trainer.callback_metrics
+        else None,
+        "final_val_loss": trainer.logged_metrics.get("val_loss")
+        if trainer.logged_metrics
+        else None,
+    }
     print(
         f"[{PROVIDER_NAME.upper()}] Training complete. Model checkpoint saved to {MODEL_ARTIFACT_PATH}."
     )
+    print(f"[{PROVIDER_NAME.upper()}] Train metrics: {metrics}")
 
     return tft, trainer
 
