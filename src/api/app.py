@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet
+from pytorch_forecasting import TemporalFusionTransformer, TimeSeriesDataSet, GroupNormalizer
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = BASE_DIR / "templates"
@@ -106,13 +106,44 @@ def preprocess_input(request: ForecastRequest, model: TemporalFusionTransformer)
     if not dataset_params:
         raise ValueError("Model checkpoint is missing dataset parameters; cannot build inference dataset.")
 
-    updated_params = {**dataset_params, "max_encoder_length": len(request.recent_costs), "min_encoder_length": 1, "min_prediction_length": 1}
-    dataset = TimeSeriesDataSet.from_parameters(
-        updated_params,
-        df,
-        predict=True,
-        stop_randomization=True,
-    )
+    updated_params = {
+        **dataset_params,
+        "max_encoder_length": len(request.recent_costs),
+        "min_encoder_length": 1,
+        "max_prediction_length": 1,
+        "min_prediction_length": 1,
+        "allow_missing_timesteps": True,
+    }
+
+    try:
+        dataset = TimeSeriesDataSet.from_parameters(
+            updated_params,
+            df,
+            predict=True,
+            stop_randomization=True,
+        )
+    except AssertionError:
+        target_normalizer = getattr(model.hparams, "target_normalizer", None)
+        if target_normalizer is None:
+            target_normalizer = GroupNormalizer(groups=["provider", "service"])
+        dataset = TimeSeriesDataSet(
+            df,
+            time_idx="time_idx",
+            target="cost",
+            group_ids=["provider", "service"],
+            max_encoder_length=len(request.recent_costs),
+            min_encoder_length=1,
+            max_prediction_length=1,
+            min_prediction_length=1,
+            time_varying_known_categoricals=["provider", "service", "region", "currency"],
+            time_varying_unknown_reals=["cost"],
+            target_normalizer=target_normalizer,
+            allow_missing_timesteps=True,
+            add_relative_time_idx=True,
+            add_target_scales=True,
+            add_encoder_length=True,
+            categorical_encoders=dataset_params.get("categorical_encoders", {}),
+        )
     return dataset.to_dataloader(batch_size=1, train=False)
 
 

@@ -178,7 +178,7 @@ def fetch_azure_cost_data(days=7):
 
 
 def main():
-    days_to_fetch = 7
+    days_to_fetch = int(os.getenv('ETL_LOOKBACK_DAYS', '7'))
 
     gcp_data = fetch_gcp_billing_data(days=days_to_fetch)
     upsert_daily_costs_pg(GCP_POSTGRES_CONN, gcp_data, 'GCP')
