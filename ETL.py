@@ -6,6 +6,7 @@ import psycopg2
 from psycopg2.extras import execute_batch
 from google.cloud import bigquery
 
+BQ_PROJECT_ID = os.getenv('BQ_PROJECT_ID', os.getenv('GCP_PROJECT_ID', ''))
 GCP_PROJECT_ID = os.getenv('GCP_PROJECT_ID', '')
 BIGQUERY_DATASET = os.getenv('BIGQUERY_DATASET', '')
 GCP_BILLING_TABLE_PATTERN = os.getenv('GCP_BILLING_TABLE_PATTERN', 'gcp_billing_export_resource_v1_*')
@@ -23,7 +24,7 @@ USD_TO_INR_RATE = float(os.getenv('USD_TO_INR_RATE', '88.67'))
 logging.basicConfig(level=logging.INFO)
 
 def fetch_gcp_billing_data(days: int = 7):
-    client = bigquery.Client(project=GCP_PROJECT_ID)
+    client = bigquery.Client(project=BQ_PROJECT_ID or GCP_PROJECT_ID)
 
     query = f"""
     SELECT

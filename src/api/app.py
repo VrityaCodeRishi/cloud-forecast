@@ -106,7 +106,7 @@ def preprocess_input(request: ForecastRequest, model: TemporalFusionTransformer)
     if not dataset_params:
         raise ValueError("Model checkpoint is missing dataset parameters; cannot build inference dataset.")
 
-    updated_params = {**dataset_params, "max_encoder_length": len(request.recent_costs)}
+    updated_params = {**dataset_params, "max_encoder_length": len(request.recent_costs), "min_encoder_length": 1, "min_prediction_length": 1}
     dataset = TimeSeriesDataSet.from_parameters(
         updated_params,
         df,
