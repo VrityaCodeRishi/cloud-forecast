@@ -18,6 +18,7 @@ AZURE_POSTGRES_CONN = os.getenv(
     'AZURE_POSTGRES_CONN',
     ''
 )
+USD_TO_INR_RATE = float(os.getenv('USD_TO_INR_RATE', '88.67'))
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,7 +29,8 @@ def fetch_gcp_billing_data(days: int = 7):
     SELECT
       DATE(usage_start_time) AS date,
       service.description AS service,
-      SUM(cost) AS cost,
+      SUM(cost) AS cost_usd,
+      ANY_VALUE(currency_conversion_rate) AS conversion_rate,
       location.region AS region,
       currency AS currency
     FROM `{GCP_PROJECT_ID}.{BIGQUERY_DATASET}.{GCP_BILLING_TABLE_PATTERN}`
@@ -45,7 +47,11 @@ def fetch_gcp_billing_data(days: int = 7):
 
     query_job = client.query(query, job_config=job_config)
     rows = query_job.result()
-    data = [(row.date, 'gcp', row.service, float(row.cost), row.region, row.currency) for row in rows]
+    data = []
+    for row in rows:
+        rate = float(row.conversion_rate or 1.0)
+        cost_in_inr = float(row.cost_usd or 0.0) * rate
+        data.append((row.date, 'gcp', row.service, cost_in_inr, row.region, 'INR'))
 
     logging.info(f"Fetched {len(data)} records from GCP BigQuery")
     return data
@@ -163,7 +169,8 @@ def fetch_azure_cost_data(days=7):
         else:
             date = start_date
 
-        parsed.append((date, 'azure', service, cost, resource_group, 'USD'))
+        cost_in_inr = cost * USD_TO_INR_RATE
+        parsed.append((date, 'azure', service, cost_in_inr, resource_group, 'INR'))
 
     logging.info(f"Fetched {len(parsed)} records from Azure Cost Management API")
     return parsed

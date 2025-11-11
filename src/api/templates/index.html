@@ -14,20 +14,21 @@
 
   <main>
     <section class="panel" id="summary-panel">
-      <h2>Provider Projections (last {{ lookback_days }} days)</h2>
+      <h2>Provider Projections</h2>
+      <p class="muted">Based on the most recent {{ lookback_days }} days of spend</p>
       <div id="summary" class="summary-grid">
-        {% if summary %}
-          {% for provider, stats in summary.items() %}
+          {% if summary %}
+            {% for provider, stats in summary.items() %}
             <article class="summary-card">
               <h3>{{ provider.upper() }}</h3>
               <p class="muted">Aggregated forecast ({{ stats.currency or 'USD' }})</p>
               <div class="figures">
-                <div><span>Weekly</span><strong>{{ stats.currency or 'USD' }} {{ '%.2f' % stats.weekly }}</strong></div>
-                <div><span>Monthly</span><strong>{{ stats.currency or 'USD' }} {{ '%.2f' % stats.monthly }}</strong></div>
-                <div><span>Yearly</span><strong>{{ stats.currency or 'USD' }} {{ '%.2f' % stats.yearly }}</strong></div>
+                <div><span>Weekly</span><strong>{{ stats.currency or 'USD' }} {{ '{:,.2f}'.format(stats.weekly) }}</strong></div>
+                <div><span>Monthly</span><strong>{{ stats.currency or 'USD' }} {{ '{:,.2f}'.format(stats.monthly) }}</strong></div>
+                <div><span>Yearly</span><strong>{{ stats.currency or 'USD' }} {{ '{:,.2f}'.format(stats.yearly) }}</strong></div>
               </div>
             </article>
-          {% endfor %}
+            {% endfor %}
         {% else %}
           <p class="muted">No provider summaries available.</p>
         {% endif %}
